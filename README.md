@@ -252,3 +252,7 @@ python3 scripts/ima_discover_candidates.py \
 如需对外发布或小范围分发，可参考：
 
 - [`references/release-plan.md`](./references/release-plan.md)
+
+如需快速向外部读者说明项目价值，可参考：
+
+- [`references/showcase.md`](./references/showcase.md)
