@@ -1,142 +1,145 @@
-# IMA Official Knowledge Bridge
+# IMA 官方知识库 Bridge
 
-Programmatic bridge for the official Tencent IMA desktop app knowledge-base QA.
+面向腾讯 IMA 桌面端官方知识库页面的程序化桥接方案。
 
-This repository provides a practical, automation-friendly path for working with
-the **official IMA knowledge-base page inside `ima.copilot.app`**.
+这个仓库的目标很明确：尽量不依赖 GUI 点按、截图坐标、剪贴板轮询，转而直接利用 `ima.copilot.app` 里**官方知识库页面本身**的会话与问答链路，完成更稳的自动化调用。
 
-Instead of relying on GUI clicking, screenshot coordinates, or a local RAG
-substitute, it aims to drive the official product surface more directly and
-more predictably.
+## 适合什么场景
 
-## Highlights
+- 对某个个人知识库直接提问
+- 在同一个知识库会话里连续追问
+- 已知 `shareId` 时，不加入也能先试问共享知识库
+- 通过 IMA OpenAPI 辅助查看当前可达知识库候选
 
-- Official knowledge-base QA bridge for personal knowledge bases
-- Same-session follow-up support
-- Shared knowledge-base direct QA when a valid `shareId` is already known
-- Candidate inspection through IMA OpenAPI
-- Temporary patch / restore flow instead of permanent extension modification
+## 项目亮点
 
-This project targets the **official IMA knowledge-base page inside `ima.copilot.app`** and focuses on a narrow, practical goal:
+- 官方知识库页问答 bridge
+- 支持同会话追问复用
+- 支持已知 `shareId` 的共享知识库直问
+- 支持候选知识库巡检
+- 采用临时 patch / 自动恢复，不做永久扩展注入
 
-- ask a question inside a specific personal knowledge base
-- reuse the same knowledge-base QA session for follow-up questions
-- ask a shared knowledge base directly when a valid `shareId` is already known
-- inspect reachable knowledge-base candidates through IMA OpenAPI
+## 当前状态
 
-It is designed for users who want a more stable alternative to GUI clicking, screenshot automation, or local RAG pretending to be IMA.
+当前成熟度可以诚实地概括为两句话：
 
-## Status
+- **架构和实现已经就位**
+- **真实闭环仍依赖有效的 IMA 本地登录态与真实知识库上下文**
 
-Current maturity:
+已完成部分：
 
-- The repository structure, scripts, and skill entrypoint are in place.
-- Static validation has passed for the Python and JavaScript bridge files.
-- The bridge is built around the official IMA knowledge-base extension page and its internal presenter/session stack.
-- Live end-to-end validation still depends on having a real `knowledgeBaseId` or `shareId` available in the target IMA account.
+- 仓库结构、脚本和 skill 入口已整理
+- Python / JavaScript 静态校验已通过
+- 方案已明确绑定到 IMA 官方知识库扩展页内部的 presenter / session 链路
+- 已补充基础防呆逻辑，避免 placeholder `shareId` 导致长时间空等
 
-So the honest status is:
+尚未完全闭环的部分：
 
-- **architecture and implementation are ready**
-- **real-world execution requires valid IMA context**
+- 发现市场里共享知识库的 `shareId` 自动提取
+- 带真实 `knowledgeBaseId` / `shareId` 的公开可复现实测样例
 
-## Project Goals
+## 这是什么
 
-This project is intentionally narrow.
+这个仓库包含：
 
-Primary goals:
+- skill 入口：[`SKILL.md`](./SKILL.md)
+- 官方知识库页 bridge 注入脚本
+- 本地 bridge server
+- 一键知识库问答 wrapper
+- 候选知识库巡检脚本
 
-- make official IMA knowledge-base QA callable from automation
-- preserve session continuity for follow-up questions
-- reduce brittle desktop automation
-- keep the implementation inspectable and easy to adapt
-
-Non-goals:
-
-- broad reverse-engineering of unrelated IMA features
-- bypassing account, permission, or product restrictions
-- pretending that OpenAPI-only operations are equivalent to official QA
-
-## What This Is
-
-This repository contains:
-
-- a skill entrypoint: [`SKILL.md`](./SKILL.md)
-- a temporary extension bridge injector
-- a local bridge server
-- a one-command wrapper for official knowledge-base QA
-- a candidate inspector for reachable knowledge bases
-
-Main scripts:
+核心文件：
 
 - [`scripts/ima_knowledge_ask.py`](./scripts/ima_knowledge_ask.py)
 - [`scripts/ima_official_knowledge_bridge.js`](./scripts/ima_official_knowledge_bridge.js)
 - [`scripts/ima_knowledge_bridge_server.py`](./scripts/ima_knowledge_bridge_server.py)
 - [`scripts/ima_discover_candidates.py`](./scripts/ima_discover_candidates.py)
 
-## What This Is Not
+## 这不是什么
 
-This project does **not** aim to be:
+这个项目**不是**：
 
-- a general-purpose IMA reverse-engineering toolkit
-- a GUI automation package
-- an unofficial cloud service for IMA
-- a substitute for valid IMA account access
+- 通用 IMA 逆向工具箱
+- 通用 GUI 自动化方案
+- 非官方 IMA 云服务
+- 绕过 IMA 权限或账号体系的工具
+- 用 OpenAPI 假装等价替代官方知识库问答
 
-It also does not claim that all IMA "发现" shared knowledge-base flows are already fully automated. The main remaining gap is still **automatic extraction of a usable `shareId` from discovery results**.
+## 设计目标
 
-## Architecture
+主要目标：
 
-The preferred route is:
+- 让 IMA 官方知识库问答能被外部自动化稳定调用
+- 让同主题追问尽量复用一个知识库会话
+- 降低桌面坐标流自动化的脆弱性
+- 保持实现可读、可审计、可继续迭代
 
-1. temporarily patch the official IMA knowledge-base extension
-2. export the page DI container
-3. open the official extension page inside the IMA app
-4. ask through the page's own presenter/store stack
-5. collect the final answer from official section updates
-6. restore the original extension files
+非目标：
 
-This keeps the control surface close to the real product behavior instead of trying to fake it from the outside.
+- 一次性打通 IMA 所有产品面
+- 把“发现”市场里所有共享知识库能力完全自动化
+- 用本地 RAG 冒充 IMA 官方知识库结果
 
-At a high level:
+## 整体思路
 
-- `ima_knowledge_ask.py` is the main entry wrapper
-- `ima_knowledge_bridge_server.py` hosts the short-lived local control channel
-- `ima_official_knowledge_bridge.js` runs inside the official knowledge-base page
-- `ima_discover_candidates.py` helps inspect reachable knowledge-base candidates
+当前首选链路：
 
-## Requirements
+1. 临时 patch IMA 官方知识库扩展
+2. 导出页面 DI container
+3. 在 IMA App 内打开官方知识库扩展页
+4. 通过页面内部 presenter / store / session 链路发问
+5. 从官方 section 更新流中回收最终答案
+6. 自动恢复原始扩展文件
 
-Environment assumptions:
+这条路线的价值在于：它尽量贴近真实产品行为，而不是在产品外层硬猜。
+
+## 架构概览
+
+- `ima_knowledge_ask.py`
+  - 主入口 wrapper
+  - 负责临时 patch、打开 IMA、启动本地 bridge server、等待结果、恢复文件
+
+- `ima_knowledge_bridge_server.py`
+  - 本地短生命周期控制通道
+  - 下发 job、回收结果
+
+- `ima_official_knowledge_bridge.js`
+  - 运行在 IMA 官方知识库页内部
+  - 负责接入官方页面上下文并触发知识库问答
+
+- `ima_discover_candidates.py`
+  - 用 IMA OpenAPI 辅助查看 owned / addable 知识库候选
+
+## 环境要求
 
 - macOS
-- Tencent IMA desktop app installed
-- logged-in IMA desktop session
-- local access to the IMA extension directory under:
+- 已安装腾讯 IMA 桌面端
+- IMA 桌面端处于登录状态
+- 本机可访问 IMA 扩展目录：
   `~/Library/Application Support/com.tencent.imamac/Default/Extensions/`
 - Python 3
 - Node.js
 
-Optional but useful:
+可选但推荐：
 
-- valid IMA OpenAPI credentials for candidate inspection
+- 有效的 IMA OpenAPI 凭证，用于候选知识库巡检
 
-## Installation
+## 安装说明
 
-This repository is currently structured as a Codex/OpenClaw skill folder.
+当前仓库本质上是一个可独立使用的 skill 目录。
 
-If you want to use it as a standalone local repository:
+使用方式：
 
-1. clone or copy this repository to a local directory
-2. keep the relative layout unchanged
-3. ensure Python 3 and Node are available
-4. update any absolute paths in your own automation layer if needed
+1. clone 或下载本仓库
+2. 保持目录结构不变
+3. 确保本机具备 Python 3 与 Node.js
+4. 如你的自动化框架依赖固定路径，再按需调整路径配置
 
-No package installation step is required for the current scripts.
+当前版本不需要额外安装第三方 Python 包。
 
-## Quick Start
+## 快速开始
 
-### Ask a personal knowledge base
+### 1. 对个人知识库提问
 
 ```bash
 python3 scripts/ima_knowledge_ask.py \
@@ -145,7 +148,7 @@ python3 scripts/ima_knowledge_ask.py \
   --timeout 120
 ```
 
-### Reuse the same session
+### 2. 复用同一个知识库会话继续追问
 
 ```bash
 python3 scripts/ima_knowledge_ask.py \
@@ -155,28 +158,7 @@ python3 scripts/ima_knowledge_ask.py \
   --timeout 120
 ```
 
-## Usage
-
-### 1. Ask a personal knowledge base
-
-```bash
-python3 scripts/ima_knowledge_ask.py \
-  '请基于这个知识库给我一个简短判断' \
-  --knowledge-base-id '<kb_id>' \
-  --timeout 120
-```
-
-### 2. Reuse the same knowledge-base session
-
-```bash
-python3 scripts/ima_knowledge_ask.py \
-  '继续追问三条最关键风险' \
-  --knowledge-base-id '<kb_id>' \
-  --session-id '<returned_session_id>' \
-  --timeout 120
-```
-
-### 3. Ask a shared knowledge base directly
+### 3. 已知 `shareId` 时直接试问共享知识库
 
 ```bash
 python3 scripts/ima_knowledge_ask.py \
@@ -186,7 +168,12 @@ python3 scripts/ima_knowledge_ask.py \
   --timeout 120
 ```
 
-### 4. Inspect reachable knowledge-base candidates
+说明：
+
+- 共享模式下 `knowledgeBaseId` 可选
+- 但如果已经知道，传上会更稳
+
+### 4. 查看当前可达知识库候选
 
 ```bash
 python3 scripts/ima_discover_candidates.py \
@@ -194,7 +181,7 @@ python3 scripts/ima_discover_candidates.py \
   --limit 10
 ```
 
-Addable list mode:
+查看 addable 列表：
 
 ```bash
 python3 scripts/ima_discover_candidates.py \
@@ -202,23 +189,21 @@ python3 scripts/ima_discover_candidates.py \
   --limit 10
 ```
 
-## Safety Notes
+## 安全与维护说明
 
-- The bridge uses **temporary patching** of the local IMA extension files.
-- The wrapper restores original files in `finally`.
-- You should still avoid running multiple overlapping bridge calls against the same extension page at the same time.
-- Placeholder values such as fake `shareId` inputs are rejected on purpose to avoid long, meaningless waits.
+- 该方案会**临时 patch 本机 IMA 扩展文件**
+- wrapper 在 `finally` 中会尽量恢复原始文件
+- 不建议同时并发跑多个针对同一扩展页的 bridge 调用
+- 明显占位的假 `shareId` 会被直接拒绝，避免空跑等待
 
-## Limitations
+## 当前限制
 
-Known limitations:
+- “发现”市场里的 `shareId` 还没有完全自动提取
+- live 成功仍依赖真实 IMA 登录态与真实知识库上下文
+- IMA 扩展版本变化后，可能需要跟进维护
+- 当前实现是基于一个已核实版本，而不是对未来所有版本自动兼容
 
-- discovery-market `shareId` extraction is not yet fully automated
-- live success depends on a valid logged-in local IMA context
-- extension version changes may require maintenance
-- this currently targets a verified local extension version rather than every future IMA release
-
-## Repository Layout
+## 仓库结构
 
 ```text
 .
@@ -236,19 +221,19 @@ Known limitations:
 
 ## Roadmap
 
-Near-term improvements:
+近期值得补强的方向：
 
-- add one verified live transcript example
-- add a reproducible troubleshooting section for common local failures
-- narrow the gap around discovery-market `shareId` extraction
-- add version compatibility notes as the IMA extension evolves
+- 增加一条真实 live 成功样例
+- 补一节常见故障排查说明
+- 缩小 discovery → `shareId` 自动提取的缺口
+- 增加不同 IMA 扩展版本的兼容记录
 
-## Recommended Next Step
+## 下一步最有价值的事
 
-The most valuable next milestone is:
+最值得做的下一步不是继续扩写文档，而是：
 
-- run a fresh live validation with a real `knowledgeBaseId` or real `shareId`
-- capture one successful transcript
-- add a short verification note under `references/`
+- 用真实 `knowledgeBaseId` 或真实 `shareId` 跑一次 fresh live 验证
+- 保存一条可复现的成功样例
+- 在 `references/` 下补一个简短验证记录
 
-That will turn the project from "well-structured bridge" into "well-structured bridge with reproducible live evidence".
+这样这个仓库就会从“结构完整的 bridge”升级成“结构完整且有公开验证证据的 bridge”。
