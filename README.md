@@ -228,12 +228,26 @@ python3 scripts/ima_discover_candidates.py \
 - 缩小 discovery → `shareId` 自动提取的缺口
 - 增加不同 IMA 扩展版本的兼容记录
 
-## 下一步最有价值的事
+## 发布后最关键的验证任务
 
-最值得做的下一步不是继续扩写文档，而是：
+如果只做一件最有价值的后续工作，我认为它仍然是正确的：
 
 - 用真实 `knowledgeBaseId` 或真实 `shareId` 跑一次 fresh live 验证
 - 保存一条可复现的成功样例
 - 在 `references/` 下补一个简短验证记录
 
-这样这个仓库就会从“结构完整的 bridge”升级成“结构完整且有公开验证证据的 bridge”。
+原因很简单：
+
+- 这个仓库的主要价值不在“概念成立”，而在“官方页面桥接在真实 IMA 环境里稳定成立”
+- 一条真实验证记录，能显著提升可信度、可维护性和后续协作效率
+- 对外部读者来说，这比继续扩展说明文字更有说服力
+
+所以我的判断是：
+
+- **这件事是合适的**
+- 而且它确实是当前最值得优先推进的下一步
+
+如果后续要继续发布维护，建议把验证记录沉淀到：
+
+- [`references/verification.md`](./references/verification.md)
+- [`CHANGELOG.md`](./CHANGELOG.md)
