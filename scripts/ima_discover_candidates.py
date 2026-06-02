@@ -3,18 +3,36 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
 
-IMA_API = Path.home() / ".openclaw/workspace/skills/ima-skill/ima_api.cjs"
+ROOT = Path(__file__).resolve().parents[1]
+IMA_API_ENV = os.environ.get("IMA_API_CJS", "").strip()
+DEFAULT_IMA_API = Path.home() / ".openclaw/workspace/skills/ima-skill/ima_api.cjs"
+LOCAL_IMA_API = ROOT.parent / "ima-skill" / "ima_api.cjs"
+
+
+def resolve_ima_api() -> Path:
+    candidates = []
+    if IMA_API_ENV:
+        candidates.append(Path(IMA_API_ENV).expanduser())
+    candidates.extend([LOCAL_IMA_API, DEFAULT_IMA_API])
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    raise SystemExit(
+        "missing ima_api.cjs; set IMA_API_CJS or place ima-skill beside this repo"
+    )
 
 
 def run_ima_api(api_path: str, body: dict[str, Any]) -> dict[str, Any]:
+    ima_api = resolve_ima_api()
     proc = subprocess.run(
-        ["node", str(IMA_API), api_path, json.dumps(body, ensure_ascii=False), "{}"],
+        ["node", str(ima_api), api_path, json.dumps(body, ensure_ascii=False), "{}"],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -106,9 +124,6 @@ def main() -> int:
     parser.add_argument("--cursor", default="")
     parser.add_argument("--json-only", action="store_true")
     args = parser.parse_args()
-
-    if not IMA_API.exists():
-        raise SystemExit(f"missing ima_api.cjs: {IMA_API}")
 
     if args.mode == "owned":
         raw = run_ima_api(
